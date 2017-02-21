@@ -44,6 +44,14 @@ var RootCmd = &cobra.Command{
 		hostname := viper.GetString("hostname")
 		etcd := viper.GetString("etcd")
 		ip := viper.GetString("ip")
+		if hostname == "" {
+			h, err := os.Hostname()
+			if err != nil {
+				log.Fatal(err)
+			}
+			hostname = h
+			log.Printf("no hostname given, using %v", hostname)
+		}
 		if ip == "" {
 			i, err := getIP()
 			if err != nil {
