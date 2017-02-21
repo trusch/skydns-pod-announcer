@@ -130,7 +130,7 @@ func announceIP(ip, name, etcdAddr string) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("fail")
+		return fmt.Errorf("failed request: %v", resp.StatusCode)
 	}
 	return nil
 }
