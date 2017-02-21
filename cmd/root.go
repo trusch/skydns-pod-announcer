@@ -21,14 +21,15 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"strings"
 
+	"github.com/coreos/etcd/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -119,18 +120,20 @@ func getIP() (string, error) {
 }
 
 func announceIP(ip, name, etcdAddr string) error {
-	body := strings.NewReader(fmt.Sprintf(`{"host":"%v"}`, ip))
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%v/skydns/local/skydns/%v", etcdAddr, name), body)
+	cfg := client.Config{Endpoints: []string{etcdAddr}}
+	c, err := client.New(cfg)
 	if err != nil {
 		return err
 	}
-	cli := &http.Client{}
-	resp, err := cli.Do(req)
+	api := client.NewKeysAPI(c)
+	key := fmt.Sprintf("/skydns/local/skydns/%v", name)
+	val := fmt.Sprintf(`{"host":"%v"}`, ip)
+	_, err = api.Create(context.Background(), key, val)
 	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed request: %v", resp.StatusCode)
+		_, err = api.Update(context.Background(), key, val)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
